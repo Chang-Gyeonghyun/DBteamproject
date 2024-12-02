@@ -1,0 +1,90 @@
+import bcrypt
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from jose import JWTError, jwt, ExpiredSignatureError
+from datetime import datetime, timedelta
+
+from app.schemas.user.request import UserSignUp, UserUpdate
+from app.entity.user.repository import UserRepository
+from app.entity.user.document import User
+from app.schemas.user.response import LoginResponse
+from app.utils.exceptions import CustomException, ExceptionEnum
+
+class UserService:
+    encoding = "UTF-8"
+    jwt_algorithm = "HS256"
+    secret_key = "b8394efc3c1d4838a71587c4b6aef2fb1a62dcbf4d9e4c4b8bfa86c279d768d4"
+        
+    def __init__(self, user_repository: UserRepository = Depends()) -> None:  
+        self.user_repository = user_repository
+        
+    def hash_password(self, plain_password: str) -> str:
+        hashed_password: bytes = bcrypt.hashpw(
+            plain_password.encode(self.encoding), 
+            bcrypt.gensalt()
+        )
+        return hashed_password.decode("UTF-8")
+    
+    def verfiy_password(self, plain_password: str, hashed_password: str) -> bool:
+        return bcrypt.checkpw(plain_password.encode(self.encoding),
+                              hashed_password.encode(self.encoding))
+        
+    async def create_user_service(self, user_form: UserSignUp):
+        user: User | None = await self.user_repository.search_user_by_id(user_form.userID)
+        if user:
+            raise CustomException(ExceptionEnum.USER_EXISTS)
+        hashed_pw = self.hash_password(user_form.password)
+        user_form.password = hashed_pw
+        await self.user_repository.create_user_entity(user_form)
+        return
+    
+    async def user_login_service(self, login_form: OAuth2PasswordRequestForm):
+        user: User | None = await self.user_repository.search_user_by_id(login_form.username)
+        if user and self.verfiy_password(login_form.password, user.hashed_password):
+            access_token = self.create_jwt(login_form.username)
+            return LoginResponse(access_token=access_token, token_type="bearer")
+        raise CustomException(ExceptionEnum.LOGIN_FAILED)
+    
+    async def update_user_info(self, user_id, user_form: UserUpdate):
+        user: User | None = await self.user_repository.search_user_by_id(user_id)
+        if user:
+            await self.user_repository.update_user(user, user_form)
+            return
+        raise CustomException(ExceptionEnum.USER_NOT_FOUND)
+
+    async def delete_user_service(self, user_id):
+        user: User | None = await self.user_repository.search_user_by_id(user_id)
+        if user:
+            await self.user_repository.delete_user(user)
+            return
+        raise CustomException(ExceptionEnum.USER_NOT_FOUND)
+
+    async def get_user_info(self, user_id):
+        user: User = await self.user_repository.search_user_by_id(user_id)
+        if user: return user
+        raise CustomException(ExceptionEnum.USER_NOT_FOUND)
+    
+    def create_jwt(self, userID: str) -> str:
+        return jwt.encode(
+            {
+                "sub": userID,
+                "exp": datetime.now() + timedelta(days=1)
+            }, 
+            self.secret_key, algorithm=self.jwt_algorithm
+        )
+    
+    def decode_jwt(self, access_token: str):
+        try:
+            payload: dict = jwt.decode(
+                access_token, 
+                self.secret_key, 
+                algorithms=[self.jwt_algorithm]
+            )
+            user_id = payload.get('sub')
+            if not user_id:
+                raise CustomException(ExceptionEnum.INVALID_TOKEN)
+            return user_id
+        except ExpiredSignatureError:
+            raise CustomException(ExceptionEnum.TOKEN_EXPIRED)
+        except JWTError:  # 일반적인 JWT 에러 처리
+            raise CustomException(ExceptionEnum.INVALID_TOKEN)
