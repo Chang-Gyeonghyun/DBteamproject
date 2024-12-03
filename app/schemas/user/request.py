@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
+from fastapi import Query
 
 class UserUpdate(BaseModel):
     userID: Optional[str] = None
@@ -23,3 +24,8 @@ class UserSignUp(BaseModel):
     nickname: str
     introduce: str
     profileImage: str
+    
+
+class PaginationParams(BaseModel):
+    page: int = Query(1, ge=1, description="페이지 번호 (1부터 시작)"),
+    limit: int = Query(10, ge=1, le=100, description="한 페이지당 항목 수 (1-100)"),

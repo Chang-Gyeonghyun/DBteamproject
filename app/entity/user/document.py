@@ -13,6 +13,6 @@ class User(Base):
     name = Column(String(255))
     nickname = Column(String(255))
     profile_image = Column(String(255))
-
-    likes = relationship("like", back_populates="user", lazy="joined")
+    
+    likes = relationship("Like", back_populates="user", lazy="joined")
     follow = relationship("follow", back_populates="user")

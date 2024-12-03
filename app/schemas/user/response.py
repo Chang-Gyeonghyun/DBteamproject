@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel
    
 class LoginResponse(BaseModel):
@@ -5,7 +6,7 @@ class LoginResponse(BaseModel):
     token_type: str
     
 class UserInformation(BaseModel):
-    userID: int
+    userID: str
     email: str
     phone: str
     gender: str
@@ -15,3 +16,14 @@ class UserInformation(BaseModel):
     introduce: str
     profileImage: str
     
+class FollowResponse(BaseModel):
+    userID: str
+    nickname: str
+    profileImage: str
+    follow_at: str
+    
+class ListFollowResponse(BaseModel):
+    follow: List[FollowResponse]
+    page: int
+    limit: int
+    total: int

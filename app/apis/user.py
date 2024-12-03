@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.entity.user.document import User
-from app.schemas.user.request import UserSignUp, UserUpdate
-from app.schemas.user.response import LoginResponse, UserInformation
+from app.schemas.post.response import ListPostsResponse
+from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
+from app.schemas.user.response import ListFollowResponse, LoginResponse, UserInformation
 from app.service.user import UserService
 from app.utils.exceptions import CustomException, ExceptionEnum
 
@@ -61,14 +62,41 @@ async def delete_user_info(
     await user_service.delete_user_service(user_id)
     return
 
-@router.get("/{UserID}/likes", response_model=None)
-async def get_user_likes():
-    pass
+@router.get("/{UserID}/likes", response_model=ListPostsResponse)
+async def get_user_likes(
+    UserID: str,
+    page_param: PaginationParams = Depends(),
+    token: str = Depends(oauth2_scheme),
+    user_service: UserService = Depends()
+):
+    user_id: str = user_service.decode_jwt(token)
+    if user_id != UserID:
+        raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
+    return await user_service.get_userlike_post(user_id, page_param)
+    
+    
 
-@router.get("/{UserID}/follower", response_model=None)
-async def get_user_follower():
-    pass
+@router.get("/{UserID}/follower", response_model=ListFollowResponse)
+async def get_user_follower(
+    UserID: str,
+    page_param: PaginationParams = Depends(),
+    token: str = Depends(oauth2_scheme),
+    user_service: UserService = Depends()
+):
+    user_id: str = user_service.decode_jwt(token)
+    if user_id != UserID:
+        raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
+    return await user_service.get_user_follower(user_id, page_param)
+    
 
-@router.get("/{UserID}/following", response_model=None)
-async def get_user_following():
-    pass
+@router.get("/{UserID}/following", response_model=ListFollowResponse)
+async def get_user_following(
+    UserID: str,
+    page_param: PaginationParams = Depends(),
+    token: str = Depends(oauth2_scheme),
+    user_service: UserService = Depends()
+):
+    user_id: str = user_service.decode_jwt(token)
+    if user_id != UserID:
+        raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
+    return await user_service.get_user_following(user_id, page_param)

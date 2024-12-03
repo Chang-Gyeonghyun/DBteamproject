@@ -1,13 +1,17 @@
+import math
+from typing import List, Tuple
 import bcrypt
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt, ExpiredSignatureError
 from datetime import datetime, timedelta
 
-from app.schemas.user.request import UserSignUp, UserUpdate
+from app.entity.post.document import Post
+from app.schemas.post.response import ListPostsResponse, PostResponse
+from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
 from app.entity.user.repository import UserRepository
 from app.entity.user.document import User
-from app.schemas.user.response import LoginResponse
+from app.schemas.user.response import FollowResponse, ListFollowResponse, LoginResponse
 from app.utils.exceptions import CustomException, ExceptionEnum
 
 class UserService:
@@ -64,6 +68,69 @@ class UserService:
         if user: return user
         raise CustomException(ExceptionEnum.USER_NOT_FOUND)
     
+    async def get_user_follower(self, user_id: str, page_param: PaginationParams):
+        paged_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_follower(user_id, page_param)
+        total_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_follower(user_id)
+        total_pages = math.ceil(len(total_follow) / page_param.limit)
+        page_size = page_param if paged_follow else len(paged_follow)
+        follower_list = [
+            FollowResponse(
+                userID=user.userID,
+                nickname=user.nickname,
+                profile_image=user.profile_image,
+                follow_at=follow_at,
+            )
+            for user, follow_at in paged_follow
+        ]
+        return ListFollowResponse(
+            follow=follower_list, 
+            page=page_param.page, 
+            limit=page_size,
+            total=total_pages
+        )
+
+    async def get_user_following(self, user_id: str, page_param: PaginationParams):
+        paged_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_following(user_id, page_param)
+        total_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_following(user_id)
+        total_pages = math.ceil(len(total_follow) / page_param.limit)
+        page_size = page_param if paged_follow else len(paged_follow)
+        following_list = [
+            FollowResponse(
+                userID=user.userID,
+                nickname=user.nickname,
+                profile_image=user.profile_image,
+                follow_at=follow_at,
+            )
+            for user, follow_at in paged_follow
+        ]
+        return ListFollowResponse(
+            follow=following_list, 
+            page=page_param.page, 
+            limit=page_size,
+            total=total_pages
+        )
+
+    async def get_userlike_post(self, user_id: str, page_param: PaginationParams):
+        paged_posts: List[Post] | None = await self.user_repository.get_user_likes(user_id, page_param)
+        total_posts: List[Post] | None = await self.user_repository.get_user_likes(user_id)
+        total_pages = math.ceil(len(total_posts) / page_param.limit)
+        page_size = page_param if paged_posts else len(paged_posts)
+        liked_posts = [
+            PostResponse(
+                PostID=post.postID,
+                Title=post.title,
+                Count_likes=post.count_likes,
+                Create_at=post.create_at
+            )
+            for post in paged_posts
+        ]
+        return ListPostsResponse(
+            liked_posts=liked_posts, 
+            page=page_param.page, 
+            limit=page_size, 
+            total=total_pages
+        )
+
     def create_jwt(self, userID: str) -> str:
         return jwt.encode(
             {
