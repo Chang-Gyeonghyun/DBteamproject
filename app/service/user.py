@@ -6,11 +6,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt, ExpiredSignatureError
 from datetime import datetime, timedelta
 
-from app.entity.post.document import Post
+from app.entity.models import Post, User
 from app.schemas.post.response import ListPostsResponse, PostResponse
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
-from app.entity.user.repository import UserRepository
-from app.entity.user.document import User
+from app.entity.repository.user import UserRepository
 from app.schemas.user.response import FollowResponse, ListFollowResponse, LoginResponse
 from app.utils.exceptions import CustomException, ExceptionEnum
 
@@ -65,7 +64,8 @@ class UserService:
 
     async def get_user_info(self, user_id):
         user: User = await self.user_repository.search_user_by_id(user_id)
-        if user: return user
+        if user: 
+            return user
         raise CustomException(ExceptionEnum.USER_NOT_FOUND)
     
     async def get_user_follower(self, user_id: str, page_param: PaginationParams):

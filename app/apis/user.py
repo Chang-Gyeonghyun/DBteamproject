@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from app.entity.user.document import User
+from app.entity.models import User
 from app.schemas.post.response import ListPostsResponse
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
 from app.schemas.user.response import ListFollowResponse, LoginResponse, UserInformation
@@ -34,7 +34,8 @@ async def get_user_info(
     user_id: str = user_service.decode_jwt(token)
     if user_id != UserID:
         raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
-    user: User = user_service.get_user_info(user_id)
+    user: User = await user_service.get_user_info(user_id)
+    print(user)
     return user
 
 @router.put("/{UserID}")

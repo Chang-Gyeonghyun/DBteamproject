@@ -1,5 +1,5 @@
-from typing import List
-from pydantic import BaseModel
+from typing import List, Optional
+from pydantic import BaseModel, ConfigDict
    
 class LoginResponse(BaseModel):
     access_token: str
@@ -13,8 +13,11 @@ class UserInformation(BaseModel):
     birth: str
     name: str
     nickname: str
-    introduce: str
-    profileImage: str
+    introduce: Optional[str] | None
+    profile_image: Optional[str] | None
+    
+    class Config:
+        orm_mode = True 
     
 class FollowResponse(BaseModel):
     userID: str

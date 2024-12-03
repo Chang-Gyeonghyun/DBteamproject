@@ -3,10 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from app.database import get_database
-from app.entity.models import Follow, Like
-from app.entity.post.document import Post
+from app.entity.models import Follow, Like, Post, User
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
-from app.entity.user.document import User
 
 class UserRepository:
     def __init__(self, session: AsyncSession = Depends(get_database)):
@@ -18,7 +16,7 @@ class UserRepository:
             email=user_form.email,
             hashed_password=user_form.password,
             phone=user_form.phone,
-            gende=user_form.gender,
+            gender=user_form.gender,
             birth=user_form.birth,
             name=user_form.name,
             nickname=user_form.nickname,
