@@ -125,7 +125,7 @@ class UserService:
             for post in paged_posts
         ]
         return ListPostsResponse(
-            liked_posts=liked_posts, 
+            posts=liked_posts, 
             page=page_param.page, 
             limit=page_size, 
             total=total_pages
