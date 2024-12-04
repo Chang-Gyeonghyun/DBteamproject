@@ -1,6 +1,6 @@
 from typing import Optional
-from pydantic import BaseModel
-from fastapi import Query
+from pydantic import BaseModel, create_model
+from fastapi import Query, Form, File, UploadFile
 
 class UserUpdate(BaseModel):
     userID: Optional[str] = None
@@ -22,9 +22,8 @@ class UserSignUp(BaseModel):
     birth: str
     name: str
     nickname: str
-    introduce: str
-    profileImage: str
-    
+    introduce: Optional[str]
+    profile_image: Optional[str]
 
 class PaginationParams(BaseModel):
     page: int = Query(1, ge=1, description="페이지 번호 (1부터 시작)")

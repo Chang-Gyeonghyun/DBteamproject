@@ -20,7 +20,7 @@ class UserRepository:
             birth=user_form.birth,
             name=user_form.name,
             nickname=user_form.nickname,
-            profile_image=user_form.profileImage,
+            profile_image=user_form.profile_image,
         )
         self.session.add(new_user)
         await self.session.commit()

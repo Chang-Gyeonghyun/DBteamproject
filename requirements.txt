@@ -1,0 +1,16 @@
+uvicorn
+pymysql
+aiomysql
+fastapi
+sqlalchemy[asyncio]
+httpx
+python-dotenv
+requests
+cryptography
+python-multipart
+python-jose[cryptography]
+pytz
+bcrypt
+alembic
+redis
+boto3
