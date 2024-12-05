@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from app.entity.models import User
@@ -20,10 +21,11 @@ async def user_login(
     
 @router.post("/signup", status_code=201)
 async def user_signup(
-    request: UserSignUp,
+    request: UserSignUp = Depends(),
+    profileImage: Optional[UploadFile] = File(None),
     user_service: UserService = Depends()
 ):
-    return await user_service.create_user_service(request)
+    return await user_service.create_user_service(request, profileImage)
 
 @router.get("/{UserID}", response_model=UserInformation)
 async def get_user_info(

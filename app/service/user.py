@@ -1,7 +1,9 @@
 import math
+import os
 from typing import List, Tuple
+from uuid import uuid4
 import bcrypt
-from fastapi import Depends
+from fastapi import Depends, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt, ExpiredSignatureError
 from datetime import datetime, timedelta
@@ -32,12 +34,15 @@ class UserService:
         return bcrypt.checkpw(plain_password.encode(self.encoding),
                               hashed_password.encode(self.encoding))
         
-    async def create_user_service(self, user_form: UserSignUp):
+    async def create_user_service(self, user_form: UserSignUp, profileImage):
         user: User | None = await self.user_repository.search_user_by_id(user_form.userID)
         if user:
             raise CustomException(ExceptionEnum.USER_EXISTS)
         hashed_pw = self.hash_password(user_form.password)
         user_form.password = hashed_pw
+        
+        profile_image = await self.save_user_profile_image(profileImage)
+        user_form.profile_image = profile_image
         await self.user_repository.create_user_entity(user_form)
         return
     
@@ -88,6 +93,16 @@ class UserService:
             limit=page_size,
             total=total_pages
         )
+
+    async def save_user_profile_image(self, profileImage: UploadFile) -> str:
+        if profileImage:
+            save_path = f"uploads/profile_images/{profileImage.filename}"
+            with open(save_path, "wb") as f:
+                file_content = await profileImage.read()
+                f.write(file_content)
+            return save_path
+        return ""
+
 
     async def get_user_following(self, user_id: str, page_param: PaginationParams):
         paged_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_following(user_id, page_param)
