@@ -22,7 +22,7 @@ async def user_login(
 @router.post("/signup", status_code=201)
 async def user_signup(
     request: UserSignUp = Depends(),
-    profileImage: Optional[UploadFile] = File(None),
+    profileImage: Optional[UploadFile] = None,
     user_service: UserService = Depends()
 ):
     return await user_service.create_user_service(request, profileImage)

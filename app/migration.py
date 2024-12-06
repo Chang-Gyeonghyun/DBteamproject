@@ -6,10 +6,8 @@ from app.entity.models import Base
 import os
 from dotenv import load_dotenv
 
-# 환경 변수를 로드합니다.
 load_dotenv()
 
-# 데이터베이스 연결 설정
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
@@ -25,9 +23,12 @@ async_session = sessionmaker(
 )
 
 async def reset_database():
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+    finally:
+        await async_engine.dispose()
 
 if __name__ == "__main__":
     asyncio.run(reset_database())

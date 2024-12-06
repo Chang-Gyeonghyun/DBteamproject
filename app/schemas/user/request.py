@@ -22,8 +22,8 @@ class UserSignUp(BaseModel):
     birth: str
     name: str
     nickname: str
-    introduce: Optional[str]
-    profile_image: Optional[str]
+    introduce: Optional[str] = None
+    profile_image: Optional[str] = None
 
 class PaginationParams(BaseModel):
     page: int = Query(1, ge=1, description="페이지 번호 (1부터 시작)")
