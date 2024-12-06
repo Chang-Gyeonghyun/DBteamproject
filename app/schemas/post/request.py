@@ -11,11 +11,11 @@ class PostCreateRequest(BaseModel):
 
 
 class PostUpdateRequest(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
+    title: str
+    content: str
+    user_id: str
     keywords: Optional[List[str]] = None
     attachments: Optional[List[str]] = None
-
 
 class PostFilterRequest(BaseModel):
     keyword: Optional[str] = None

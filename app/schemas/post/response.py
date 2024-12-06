@@ -1,38 +1,34 @@
-# from pydantic import BaseModel
-# from typing import List
-
-# class PostResponse(BaseModel):
-#     PostID: int
-#     Title: str
-#     Count_likes: int
-#     Create_at: str
-
-# class ListPostsResponse(BaseModel):
-#     posts: List[PostResponse]
-#     page: int
-#     limit: int
-#     total: int
-    
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
-
-
-class KeywordResponse(BaseModel):
-    keywordID: int
-    name: str
-
-    class Config:
-        orm_mode = True
-
 
 class AttachmentResponse(BaseModel):
     attachmentID: int
     fileName: str
-    filePath: str
+    
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+class CommentResponse(BaseModel):
+    CommentID: int
+    ParentCommentID: Optional[int]
+    Content: str
+    UserID: str
+    create_at: datetime
+    Replies: List["CommentResponse"] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PostWithDetailsResponse(BaseModel):
+    PostID: int
+    Title: str
+    Content: str
+    Count_likes: int
+    nickname: str
+    Create_at: datetime
+    Update_at: datetime
+    keyword: Optional[List[str]] = None
+    attachment: Optional[List[AttachmentResponse]] = None
+    comments: Optional[List[CommentResponse]] = None
 
 
 class PostResponse(BaseModel):
@@ -41,18 +37,6 @@ class PostResponse(BaseModel):
 
     class Config:
         orm_mode = True
-
-
-class PostWithDetailsResponse(PostResponse):
-    content: str
-    create_at: datetime
-    update_at: datetime
-    keywords: List[KeywordResponse]
-    attachments: List[AttachmentResponse]
-
-    class Config:
-        orm_mode = True
-
 
 class ListPostsResponse(BaseModel):
     posts: List[PostResponse]

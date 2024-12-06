@@ -16,8 +16,7 @@ class UserInformation(BaseModel):
     introduce: Optional[str] | None
     profile_image: Optional[str] | None
     
-    class Config:
-        orm_mode = True 
+    model_config = ConfigDict(from_attributes=True)
     
 class FollowResponse(BaseModel):
     userID: str

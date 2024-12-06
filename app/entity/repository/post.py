@@ -1,10 +1,10 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from typing import Optional, List, Tuple
 from app.database import get_database
-from app.entity.models import Post, Keyword, PostKeyword, Attachment
+from app.entity.models import Comment, Post, Keyword, PostKeyword, Attachment
 from app.schemas.post.request import PostCreateRequest, PostUpdateRequest, PostFilterRequest
 
 
@@ -20,44 +20,53 @@ class PostRepository:
         )
         self.session.add(new_post)
         await self.session.flush()
-
-        # 키워드 처리
-        for keyword in post_data.keywords or []:
-            db_keyword = await self.session.scalar(select(Keyword).where(Keyword.name == keyword))
-            if not db_keyword:
-                db_keyword = Keyword(name=keyword)
-                self.session.add(db_keyword)
-                await self.session.flush()
-            self.session.add(PostKeyword(postID=new_post.postID, keywordID=db_keyword.keywordID))
-
-        # 첨부파일 처리
-        for attachment in post_data.attachments or []:
-            self.session.add(Attachment(
-                postID=new_post.postID,
-                fileName=attachment,
-                filePath=f"/uploads/{attachment}",
-            ))
-
-        await self.session.commit()
         return new_post
 
-    async def get_post_by_id(self, post_id: int) -> Optional[Post]:
-        stmt = (
+    async def get_post_detail_by_id(self, post_id: int) -> Optional[Post]:
+        query = (
             select(Post)
+            .options(
+                joinedload(Post.user),  
+                joinedload(Post.comments).joinedload(Comment.replies),  
+                joinedload(Post.likes),  
+                joinedload(Post.attachments),  
+                joinedload(Post.keywords), 
+            )
             .where(Post.postID == post_id)
-            .options(selectinload(Post.keywords), selectinload(Post.attachments))
         )
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        result = await self.session.execute(query)
+        return result.scalars().first()
+    
+    async def get_post_by_id(self, post_id: int) -> Optional[Post]:
+        query = (
+            select(Post)
+            .options(
+                joinedload(Post.user),  
+                joinedload(Post.comments).joinedload(Comment.replies),  
+                joinedload(Post.likes),  
+                joinedload(Post.attachments),  
+                joinedload(Post.keywords), 
+            )
+            .where(Post.postID == post_id)
+        )
+        result = await self.session.execute(query)
+        return result.scalars().first()
 
-    async def update_post(self, post_id: int, update_data: PostUpdateRequest) -> Optional[Post]:
-        post = await self.get_post_by_id(post_id)
-        if not post:
-            return None
+    async def get_post_by_id(self, post_id: int):
+        post = await self.session.scalar(
+            select(Post).where(Post.postID == post_id)
+        )
+        return post
 
+    async def update_post(self, post: Post, update_data: PostUpdateRequest) -> Optional[Post]:
         for field, value in update_data.dict(exclude_unset=True).items():
             if hasattr(post, field):
                 setattr(post, field, value)
+                
+        self.session.add(post)
+        await self.session.commit()
+        await self.session.refresh(post)
+        return post
 
         if update_data.keywords is not None:
             await self.session.execute(delete(PostKeyword).where(PostKeyword.postID == post_id))
