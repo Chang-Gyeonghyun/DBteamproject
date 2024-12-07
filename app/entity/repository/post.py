@@ -1,11 +1,11 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, func
+from sqlalchemy import select, delete, func, update
 from sqlalchemy.orm import selectinload, joinedload
 from typing import Optional, List, Tuple
 from app.database import get_database
-from app.entity.models import Comment, Post, Keyword, PostKeyword, Attachment
-from app.schemas.post.request import PostCreateRequest, PostUpdateRequest, PostFilterRequest
+from app.entity.models import Comment, Post, Keyword, Attachment
+from app.schemas.post.request import PaginatedRequest, PostCreateRequest, PostUpdateRequest, UserKeywordRequest
 
 
 class PostRepository:
@@ -36,103 +36,82 @@ class PostRepository:
         )
         result = await self.session.execute(query)
         return result.scalars().first()
-    
-    async def get_post_by_id(self, post_id: int) -> Optional[Post]:
-        query = (
-            select(Post)
-            .options(
-                joinedload(Post.user),  
-                joinedload(Post.comments).joinedload(Comment.replies),  
-                joinedload(Post.likes),  
-                joinedload(Post.attachments),  
-                joinedload(Post.keywords), 
-            )
-            .where(Post.postID == post_id)
-        )
-        result = await self.session.execute(query)
-        return result.scalars().first()
 
     async def get_post_by_id(self, post_id: int):
         post = await self.session.scalar(
             select(Post).where(Post.postID == post_id)
         )
         return post
-
-    async def update_post(self, post: Post, update_data: PostUpdateRequest) -> Optional[Post]:
-        for field, value in update_data.dict(exclude_unset=True).items():
-            if hasattr(post, field):
-                setattr(post, field, value)
-                
-        self.session.add(post)
+    
+    async def update_likes(self, post_id: int, unlike: bool = False):
+        stmt = (
+            update(Post)
+            .where(Post.postID == post_id)
+            .values(count_likes=Post.count_likes + (-1 if unlike else 1))
+        )
+        await self.session.execute(stmt)
         await self.session.commit()
-        await self.session.refresh(post)
-        return post
-
-        if update_data.keywords is not None:
-            await self.session.execute(delete(PostKeyword).where(PostKeyword.postID == post_id))
-            for keyword in update_data.keywords:
-                db_keyword = await self.session.scalar(select(Keyword).where(Keyword.name == keyword))
-                if not db_keyword:
-                    db_keyword = Keyword(name=keyword)
-                    self.session.add(db_keyword)
-                    await self.session.flush()
-                self.session.add(PostKeyword(postID=post_id, keywordID=db_keyword.keywordID))
-
-        if update_data.attachments is not None:
-            await self.session.execute(delete(Attachment).where(Attachment.postID == post_id))
-            for attachment in update_data.attachments:
-                self.session.add(Attachment(
-                    postID=post_id,
-                    fileName=attachment,
-                    filePath=f"/uploads/{attachment}",
-                ))
-
+        return
+    
+    async def update_post(self, post_id: str, update_data: dict) -> Post:
+        await self.session.execute(
+            update(Post)
+            .where(Post.postID == post_id)
+            .values(**update_data)
+        )
         await self.session.commit()
-        await self.session.refresh(post)
-        return post
+        return 
 
-    async def delete_post(self, post_id: int) -> bool:
-        post = await self.get_post_by_id(post_id)
-        if not post:
-            return False
+    async def delete_post(self, post: Post) -> bool:
         await self.session.delete(post)
         await self.session.commit()
-        return True
+        return
 
-    async def filter_posts(self, filter_data: PostFilterRequest) -> Tuple[List[Post], int]:
+    async def treding_posts(self, filter_data: PaginatedRequest) -> Tuple[List[Post], int]:
         offset = (filter_data.page - 1) * filter_data.limit
-
-        stmt = select(Post).offset(offset).limit(filter_data.limit).options(selectinload(Post.keywords))
-        if filter_data.keyword:
-            stmt = stmt.join(PostKeyword).join(Keyword).where(Keyword.name == filter_data.keyword)
-
-        result = await self.session.execute(stmt)
-        posts = result.scalars().all()
-
-        count_stmt = select(func.count()).select_from(Post)
-        if filter_data.keyword:
-            count_stmt = count_stmt.join(PostKeyword).join(Keyword).where(Keyword.name == filter_data.keyword)
-
-        total_result = await self.session.execute(count_stmt)
-        total_count = total_result.scalar()
-
-        return posts, total_count
-
-    async def get_user_posts_by_category(self, user_id: str, category: str, page: int, limit: int) -> Tuple[List[Post], int]:
-        offset = (page - 1) * limit
-
         stmt = (
             select(Post)
-            .where(Post.userID == user_id, Post.categoryname == category)
+            .options(joinedload(Post.user))
+            .order_by(Post.count_likes.desc())
             .offset(offset)
-            .limit(limit)
-            .options(selectinload(Post.keywords))
+            .limit(filter_data.limit)
         )
         result = await self.session.execute(stmt)
         posts = result.scalars().all()
 
-        count_stmt = select(func.count()).where(Post.userID == user_id, Post.categoryname == category)
+        count_stmt = select(func.count()).select_from(Post)
         total_result = await self.session.execute(count_stmt)
         total_count = total_result.scalar()
 
         return posts, total_count
+
+    async def get_user_posts_by_category(self, request: UserKeywordRequest) -> Tuple[List[Post], int]:
+        offset = (request.page - 1) * request.limit
+
+        stmt = (
+            select(Post)
+            .join(Post.keywords)  
+            .options(joinedload(Post.user))  
+            .where(Keyword.name == request.keyword) 
+            .order_by(Post.count_likes.desc())
+            .offset(offset)
+            .limit(request.limit)
+        )
+
+        # 데이터 가져오기
+        result = await self.session.execute(stmt)
+        posts = result.scalars().all()
+
+        # 총 개수 계산
+        count_stmt = (
+            select(func.count(Post.postID))  
+            .join(Post.keywords)
+            .where(Keyword.name == request.keyword)
+        )
+        total_result = await self.session.execute(count_stmt)
+        total_count = total_result.scalar()
+
+        return posts, total_count
+
+
+

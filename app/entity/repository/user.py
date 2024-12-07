@@ -60,6 +60,20 @@ class UserRepository:
     async def get_user_follower(self, user_id: str, page_param: PaginationParams = None):
         query = (
             select(User, Follow.follow_at)
+            .join(Follow, Follow.userID == User.userID)
+            .where(Follow.followID == user_id)  
+        )
+        if page_param is not None:
+            offset = (page_param.page - 1) * page_param.limit
+            query = query.offset(offset).limit(page_param.limit)
+        
+        result = await self.session.execute(query)
+        return result.all()
+
+        
+    async def get_user_following(self, user_id: str, page_param: PaginationParams = None):
+        query = (
+            select(User, Follow.follow_at)
             .join(Follow, Follow.followID == User.userID)
             .where(Follow.userID == user_id)
         )
@@ -68,20 +82,8 @@ class UserRepository:
             query = query.offset(offset).limit(page_param.limit)
         
         result = await self.session.execute(query)
-        return result.scalars().all()
-        
-    async def get_user_following(self, user_id: str, page_param: PaginationParams = None):
-        query = (
-            select(User, Follow.follow_at)
-            .join(Follow, Follow.followID == user_id)
-            .where(Follow.userID == User.userID)
-        )
-        if page_param is not None:
-            offset = (page_param.page - 1) * page_param.limit
-            query = query.offset(offset).limit(page_param.limit)
-        
-        result = await self.session.execute(query)
-        return result.scalars().all()
+        return result.all()
+
     
     async def delete_user(self, user: User):
         await self.session.delete(user)

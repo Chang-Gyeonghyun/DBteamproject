@@ -30,13 +30,12 @@ class PostWithDetailsResponse(BaseModel):
     attachment: Optional[List[AttachmentResponse]] = None
     comments: Optional[List[CommentResponse]] = None
 
-
 class PostResponse(BaseModel):
     postID: int
     title: str
-
-    class Config:
-        orm_mode = True
+    count_likes: int
+    nickname: str
+    create_at: datetime
 
 class ListPostsResponse(BaseModel):
     posts: List[PostResponse]

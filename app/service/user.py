@@ -107,8 +107,11 @@ class UserService:
     async def get_user_following(self, user_id: str, page_param: PaginationParams):
         paged_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_following(user_id, page_param)
         total_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_following(user_id)
-        total_pages = math.ceil(len(total_follow) / page_param.limit)
-        page_size = page_param if paged_follow else len(paged_follow)
+        
+        total_pages = math.ceil(len(total_follow) / page_param.limit) if total_follow else 0
+        page_size = len(paged_follow) if paged_follow else 0
+        
+        # 팔로우 정보 매핑
         following_list = [
             FollowResponse(
                 userID=user.userID,
@@ -118,12 +121,14 @@ class UserService:
             )
             for user, follow_at in paged_follow
         ]
+        
         return ListFollowResponse(
             follow=following_list, 
             page=page_param.page, 
             limit=page_size,
             total=total_pages
         )
+
 
     async def get_userlike_post(self, user_id: str, page_param: PaginationParams):
         paged_posts: List[Post] | None = await self.user_repository.get_user_likes(user_id, page_param)

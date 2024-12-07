@@ -11,13 +11,10 @@ class LikeRepository:
         self.session = session
 
     async def like_post(self, user_id: str, post_id: int):
-        post = await self.session.scalar(select(Post).where(Post.postID == post_id))
-        if not post:
-            raise HTTPException(status_code=404, detail="Post not found")
-
         like = Like(userID=user_id, postID=post_id)
         self.session.add(like)
         await self.session.commit()
+        return
 
     async def unlike_post(self, user_id: str, post_id: int):
         stmt = delete(Like).where(Like.userID == user_id, Like.postID == post_id)

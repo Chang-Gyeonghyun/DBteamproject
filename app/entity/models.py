@@ -73,8 +73,11 @@ class Keyword(Base):
     __tablename__ = "keyword"
     postID = Column(Integer, ForeignKey("post.postID", ondelete="CASCADE"), primary_key=True)
     name = Column(String(255), primary_key=True, nullable=False)
+    
+    # 수정된 부분: posts -> post
+    post = relationship("Post", back_populates="keywords")
 
-    posts = relationship("PostKeyword", back_populates="keyword", cascade="all, delete-orphan")
+
 
 class Attachment(Base):
     __tablename__ = "attachment"
