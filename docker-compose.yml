@@ -4,6 +4,8 @@ services:
   db:
     image: mysql:8.0
     container_name: db
+    env_file:
+      - .env
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -24,6 +26,8 @@ services:
     container_name: my-fastapi-container
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy

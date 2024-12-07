@@ -21,8 +21,8 @@ async def user_login(
     
 @router.post("/signup", status_code=201)
 async def user_signup(
-    request: UserSignUp = Depends(),
-    profileImage: Optional[UploadFile] = None,
+    request: UserSignUp = Depends(UserSignUp.as_form),
+    profileImage: Optional[UploadFile] = File(None),
     user_service: UserService = Depends()
 ):
     return await user_service.create_user_service(request, profileImage)
@@ -42,14 +42,15 @@ async def get_user_info(
 @router.put("/{UserID}")
 async def modify_user_info(
     UserID: str,
-    request: UserUpdate,
+    request: UserUpdate = Depends(UserUpdate.as_form),
+    profileImage: Optional[UploadFile] = File(None),
     token: str = Depends(oauth2_scheme),
     user_service: UserService = Depends()
 ):
     user_id: str = user_service.decode_jwt(token)
     if user_id != UserID:
         raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
-    await user_service.update_user_info(user_id, request)
+    await user_service.update_user_info(user_id, request, profileImage)
     return
 
 @router.delete("/{UserID}", status_code=204)
