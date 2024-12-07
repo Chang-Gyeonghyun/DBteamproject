@@ -14,3 +14,4 @@ bcrypt
 alembic
 redis
 boto3
+aiofiles

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
    
@@ -17,13 +18,14 @@ class UserInformation(BaseModel):
     profile_image: Optional[str] | None
     
     class Config:
-        orm_mode = True 
-    
+        orm_mode = True
+
 class FollowResponse(BaseModel):
     userID: str
     nickname: str
-    profileImage: str
-    follow_at: str
+    profileImage: Optional[str] = None  
+    follow_at: datetime  
+
     
 class ListFollowResponse(BaseModel):
     follow: List[FollowResponse]

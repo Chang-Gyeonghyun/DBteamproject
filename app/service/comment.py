@@ -16,6 +16,6 @@ class CommentService:
         comment: Comment | None = await self.comment_repository.get_comment_by_id(comment_id)
         if comment.userID != user_id:
             raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
-        await self.comment_repository.delete_comment(comment_id)
+        await self.comment_repository.delete_comment(comment)
         return
 

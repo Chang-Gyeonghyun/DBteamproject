@@ -11,7 +11,32 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     nickname: Optional[str] = None
     introduce: Optional[str] = None
-    profileImage: Optional[str] = None
+    profile_image: Optional[str] = None
+
+    @classmethod
+    def as_form(
+        cls,
+        userID: Optional[str] = Form(None),
+        email: Optional[str] = Form(None),
+        phone: Optional[str] = Form(None),
+        gender: Optional[str] = Form(None),
+        birth: Optional[str] = Form(None),
+        name: Optional[str] = Form(None),
+        nickname: Optional[str] = Form(None),
+        introduce: Optional[str] = Form(None),
+        profile_image: Optional[str] = Form(None),
+    ):
+        return cls(
+            userID=userID,
+            email=email,
+            phone=phone,
+            gender=gender,
+            birth=birth,
+            name=name,
+            nickname=nickname,
+            introduce=introduce,
+            profile_image=profile_image,
+        )
 
 class UserSignUp(BaseModel):
     userID: str
@@ -24,6 +49,34 @@ class UserSignUp(BaseModel):
     nickname: str
     introduce: Optional[str] = None
     profile_image: Optional[str] = None
+
+    @classmethod
+    def as_form(
+        cls,
+        userID: str = Form(...),
+        email: str = Form(...),
+        password: str = Form(...),
+        phone: str = Form(...),
+        gender: str = Form(...),
+        birth: str = Form(...),
+        name: str = Form(...),
+        nickname: str = Form(...),
+        introduce: Optional[str] = Form(None),
+        profile_image: Optional[str] = Form(None)
+    ):
+        return cls(
+            userID=userID,
+            email=email,
+            password=password,
+            phone=phone,
+            gender=gender,
+            birth=birth,
+            name=name,
+            nickname=nickname,
+            introduce=introduce,
+            profile_image=profile_image
+        )
+
 
 class PaginationParams(BaseModel):
     page: int = Query(1, ge=1, description="페이지 번호 (1부터 시작)")

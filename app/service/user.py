@@ -53,12 +53,14 @@ class UserService:
             return LoginResponse(access_token=access_token, token_type="bearer")
         raise CustomException(ExceptionEnum.LOGIN_FAILED)
     
-    async def update_user_info(self, user_id, user_form: UserUpdate):
+    async def update_user_info(self, user_id, user_form: UserUpdate, profileImage: UploadFile):
         user: User | None = await self.user_repository.search_user_by_id(user_id)
-        if user:
-            await self.user_repository.update_user(user, user_form)
-            return
-        raise CustomException(ExceptionEnum.USER_NOT_FOUND)
+        if not user:
+            raise CustomException(ExceptionEnum.USER_NOT_FOUND)
+        profile_image = await self.save_user_profile_image(profileImage)
+        user_form.profile_image = profile_image
+        await self.user_repository.update_user(user, user_form)
+        return
 
     async def delete_user_service(self, user_id):
         user: User | None = await self.user_repository.search_user_by_id(user_id)
@@ -95,20 +97,26 @@ class UserService:
         )
 
     async def save_user_profile_image(self, profileImage: UploadFile) -> str:
-        if profileImage:
-            save_path = f"uploads/profile_images/{profileImage.filename}"
+        if profileImage:            
+            save_dir = "uploads/profile_images"
+            os.makedirs(save_dir, exist_ok=True)  # 디렉토리 생성
+            save_path = os.path.join(save_dir, profileImage.filename)
+
             with open(save_path, "wb") as f:
                 file_content = await profileImage.read()
                 f.write(file_content)
+
             return save_path
         return ""
-
-
+    
     async def get_user_following(self, user_id: str, page_param: PaginationParams):
         paged_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_following(user_id, page_param)
         total_follow: List[Tuple[User, str]] | None = await self.user_repository.get_user_following(user_id)
-        total_pages = math.ceil(len(total_follow) / page_param.limit)
-        page_size = page_param if paged_follow else len(paged_follow)
+        
+        total_pages = math.ceil(len(total_follow) / page_param.limit) if total_follow else 0
+        page_size = len(paged_follow) if paged_follow else 0
+        
+        # 팔로우 정보 매핑
         following_list = [
             FollowResponse(
                 userID=user.userID,
@@ -118,12 +126,14 @@ class UserService:
             )
             for user, follow_at in paged_follow
         ]
+        
         return ListFollowResponse(
             follow=following_list, 
             page=page_param.page, 
             limit=page_size,
             total=total_pages
         )
+
 
     async def get_userlike_post(self, user_id: str, page_param: PaginationParams):
         paged_posts: List[Post] | None = await self.user_repository.get_user_likes(user_id, page_param)
