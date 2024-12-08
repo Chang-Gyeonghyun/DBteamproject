@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_database
 from app.entity.repository.attachment import AttachmentRepository
+from app.entity.repository.comment import CommentRepository
 from app.entity.repository.follow import FollowRepository
 from app.entity.repository.keyword import KeywordRepository
 from app.entity.repository.like import LikeRepository
@@ -22,6 +23,9 @@ class RepositoryFactory:
     def get_keyword_repository(self):
         return KeywordRepository(self.session)
 
+    def get_comment_repository(self):
+        return CommentRepository(self.session)
+    
     def get_attachment_repository(self):
         return AttachmentRepository(self.session)
     

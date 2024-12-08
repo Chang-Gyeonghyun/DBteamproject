@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Literal, Optional, List
 from fastapi import Form, Query
 
 
@@ -59,3 +59,9 @@ class PaginatedRequest(BaseModel):
 class UserKeywordRequest(PaginatedRequest):
     userID: str
     keyword: str
+
+class MainFilterSearch(PaginatedRequest):
+    keyword: Optional[str] = Query(default=None)
+    field: Optional[Literal["title", "content", "title+content", "username"]] = Query(default=None)
+    page: int = Query(default=1, ge=1)
+    limit: int = Query(default=10, ge=1, le=100)

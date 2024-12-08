@@ -31,3 +31,9 @@ class AttachmentRepository:
         )
         await self.session.commit()
         return file_paths
+
+    async def get_attachment_by_id(self, attachment_id: int) -> Attachment:
+        stmt = select(Attachment).where(Attachment.attachmentID == attachment_id)
+        result = await self.session.execute(stmt)
+        attachment = result.scalar_one_or_none()
+        return attachment

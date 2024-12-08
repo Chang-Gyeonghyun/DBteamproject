@@ -37,8 +37,8 @@ async def get_user_info(
     user_id: str = user_service.decode_jwt(token)
     if user_id != UserID:
         raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
-    user: User = await user_service.get_user_info(user_id)
-    return user
+    return await user_service.get_user_info(UserID)
+  
 
 @router.put("/{UserID}")
 async def modify_user_info(

@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 from typing import List, Optional, Dict
 from pydantic import BaseModel, ConfigDict
@@ -19,6 +20,15 @@ class UserInformation(BaseModel):
     
     class Config:
         orm_mode = True
+    @property
+    def profile_image_base64(self) -> Optional[str]:
+        if self.profile_image:
+            try:
+                with open(self.profile_image, "rb") as image_file:
+                    return f"data:image/jpeg;base64,{base64.b64encode(image_file.read()).decode('utf-8')}"
+            except FileNotFoundError:
+                return None
+        return None
 
 class FollowResponse(BaseModel):
     userID: str

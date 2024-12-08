@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, File, UploadFile
 from app.service.post import PostService
-from app.schemas.post.request import PaginatedRequest, PostCreateRequest, PostUpdateRequest, UserKeywordRequest
+from app.schemas.post.request import MainFilterSearch, PaginatedRequest, PostCreateRequest, PostUpdateRequest, UserKeywordRequest
 from app.schemas.post.response import PostWithDetailsResponse, ListPostsResponse
 from app.apis.user import oauth2_scheme
 from app.service.user import UserService
@@ -29,6 +29,12 @@ async def trending_posts(
 ):
     return await post_service.trending_posts(filter_data)
 
+@router.get("/search", response_model=ListPostsResponse)
+async def get_user_posts_by_category(
+    request: MainFilterSearch = Depends(),
+    post_service: PostService = Depends()
+):
+    return await post_service.get_posts_by_filtering(request)
 
 @router.get("/{post_id}", response_model=PostWithDetailsResponse)
 async def get_post(

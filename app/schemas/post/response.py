@@ -7,7 +7,7 @@ class AttachmentResponse(BaseModel):
     fileName: str
     
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 class CommentResponse(BaseModel):
     commentID: int

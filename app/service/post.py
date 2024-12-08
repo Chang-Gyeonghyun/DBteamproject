@@ -6,7 +6,7 @@ from fastapi import Depends, UploadFile
 from sqlalchemy.inspection import inspect
 from app.entity.models import Comment, Post
 from app.entity.repository.repository import RepositoryFactory
-from app.schemas.post.request import PaginatedRequest, PostCreateRequest, PostUpdateRequest, UserKeywordRequest
+from app.schemas.post.request import MainFilterSearch, PaginatedRequest, PostCreateRequest, PostUpdateRequest, UserKeywordRequest
 from app.schemas.post.response import AttachmentResponse, CommentResponse, ListPostsResponse, PostResponse, PostWithDetailsResponse
 from app.utils.exceptions import CustomException, ExceptionEnum
 
@@ -155,6 +155,27 @@ class PostService:
 
     async def get_user_posts_by_category(self, request: UserKeywordRequest) -> ListPostsResponse:
         posts, total = await self.post_repo.get_user_posts_by_category(request)
+        response_posts = [
+            PostResponse(
+                postID=post.postID,
+                title=post.title,
+                count_likes=post.count_likes,
+                userID=post.user.userID,
+                nickname=post.user.nickname,
+                create_at=post.create_at,
+            )
+            for post in posts
+        ]
+
+        return ListPostsResponse(
+            posts=response_posts,
+            page=request.page,
+            limit=request.limit,
+            total=total,
+        )
+
+    async def get_posts_by_filtering(self, request: MainFilterSearch) -> ListPostsResponse:
+        posts, total = await self.post_repo.get_posts_by_filtering(request)
         response_posts = [
             PostResponse(
                 postID=post.postID,

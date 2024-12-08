@@ -1,11 +1,12 @@
+from operator import or_
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, func, update
 from sqlalchemy.orm import selectinload, joinedload
 from typing import Optional, List, Tuple
 from app.database import get_database
-from app.entity.models import Comment, Post, Keyword, Attachment
-from app.schemas.post.request import PaginatedRequest, PostCreateRequest, PostUpdateRequest, UserKeywordRequest
+from app.entity.models import Comment, Post, Keyword, Attachment, User
+from app.schemas.post.request import MainFilterSearch, PaginatedRequest, PostCreateRequest, PostUpdateRequest, UserKeywordRequest
 
 
 class PostRepository:
@@ -85,27 +86,39 @@ class PostRepository:
 
         return posts, total_count
 
-    async def get_user_posts_by_category(self, request: UserKeywordRequest) -> Tuple[List[Post], int]:
+    async def get_posts_by_filtering(self, request: MainFilterSearch) -> Tuple[List[Post], int]:
         offset = (request.page - 1) * request.limit
+        filters = []
+
+        if request.field == "title":
+            filters.append(Post.title.ilike(f"%{request.keyword}%"))
+        elif request.field == "content":
+            filters.append(Post.content.ilike(f"%{request.keyword}%"))
+        elif request.field == "title+content":
+            filters.append(
+                or_(
+                    Post.title.ilike(f"%{request.keyword}%"),
+                    Post.content.ilike(f"%{request.keyword}%")
+                )
+            )
+        elif request.field == "username":
+            filters.append(User.nickname.ilike(f"%{request.keyword}%"))
 
         stmt = (
             select(Post)
-            .join(Post.keywords)  # 키워드와 조인
-            .options(joinedload(Post.user))  # 작성자 데이터 미리 로드
-            .where(Keyword.name == request.keyword)  # 키워드 조건
-            .offset(offset)  # 페이지 시작점
-            .limit(request.limit)  # 페이지 크기 제한
+            .options(joinedload(Post.user)) 
+            .where(*filters)
+            .offset(offset)
+            .limit(request.limit)
         )
 
-        # 결과 실행
         result = await self.session.execute(stmt)
         posts = result.scalars().all()
 
-        # 총 게시물 수 계산
         count_stmt = (
-            select(func.count(Post.postID))  # 게시물 ID 개수
-            .join(Post.keywords)
-            .where(Keyword.name == request.keyword)  # 키워드 조건
+            select(func.count(Post.postID))
+            .join(User, Post.userID == User.userID)  
+            .where(*filters)
         )
         total_result = await self.session.execute(count_stmt)
         total_count = total_result.scalar()

@@ -14,7 +14,7 @@ from app.entity.models import Keyword, Post, User
 from app.entity.repository.repository import RepositoryFactory
 from app.schemas.post.response import ListPostsResponse, PostResponse
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
-from app.schemas.user.response import FollowResponse, UserBlogResponse, ListFollowResponse, LoginResponse
+from app.schemas.user.response import FollowResponse, UserBlogResponse, ListFollowResponse, LoginResponse, UserInformation
 from app.utils.exceptions import CustomException, ExceptionEnum
 
 class UserService:
@@ -72,10 +72,12 @@ class UserService:
             return
         raise CustomException(ExceptionEnum.USER_NOT_FOUND)
 
-    async def get_user_info(self, user_id):
+    async def get_user_info(self, user_id) -> UserInformation:
         user: User = await self.user_repository.search_user_by_id(user_id)
         if user: 
-            return user
+            user_info = UserInformation.from_orm(user)
+            user_info.profile_image = user_info.profile_image_base64
+            return user_info
         raise CustomException(ExceptionEnum.USER_NOT_FOUND)
     
     async def get_user_follower(self, user_id: str, page_param: PaginationParams):
@@ -196,4 +198,6 @@ class UserService:
         except ExpiredSignatureError:
             raise CustomException(ExceptionEnum.TOKEN_EXPIRED)
         except JWTError:
+            raise CustomException(ExceptionEnum.INVALID_TOKEN)
+        except Exception:
             raise CustomException(ExceptionEnum.INVALID_TOKEN)

@@ -1,12 +1,12 @@
 from fastapi import Depends
-from app.entity.repository.comment import CommentRepository
 from app.entity.models import Comment
+from app.entity.repository.repository import RepositoryFactory
 from app.schemas.comment.request import CommentRequest
 from app.utils.exceptions import CustomException, ExceptionEnum
 
 class CommentService:    
-    def __init__(self, comment_repository: CommentRepository = Depends()) -> None:  
-        self.comment_repository = comment_repository
+    def __init__(self, repository_factory: RepositoryFactory = Depends()):
+        self.comment_repository = repository_factory.get_comment_repository()
         
     async def create_comment(self, request: CommentRequest):
         comment = await self.comment_repository.create_comment(request)
