@@ -1,16 +1,17 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, File, UploadFile
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 
 from app.entity.models import User
 from app.schemas.post.response import ListPostsResponse
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
-from app.schemas.user.response import KeywordCountResponse, ListFollowResponse, LoginResponse, UserInformation
+from app.schemas.user.response import ListFollowResponse, LoginResponse, UserBlogResponse, UserInformation
 from app.service.user import UserService
+from app.utils.core import OptionalOauth2Scheme
 from app.utils.exceptions import CustomException, ExceptionEnum
 
 router = APIRouter(prefix="/user", tags=['User'])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login")
+oauth2_scheme = OptionalOauth2Scheme(tokenUrl="/user/login")
 
 @router.post("/login", response_model=LoginResponse)
 async def user_login(
@@ -104,9 +105,13 @@ async def get_user_following(
         raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
     return await user_service.get_user_following(user_id, page_param)
 
-@router.get("/{UserID}/post/count", response_model=KeywordCountResponse)
-async def get_user_post_count(
+@router.get("/{UserID}/main", response_model=UserBlogResponse)
+async def get_user_blog_main(
     UserID: str,
+    token: Optional[str] = Depends(oauth2_scheme),
     user_service: UserService = Depends()
 ):
-    return await user_service.get_user_post_count(UserID)
+    user_id: Optional[str] = None
+    if token:
+        user_id = user_service.decode_jwt(token)
+    return await user_service.get_user_blog_main(UserID, user_id)

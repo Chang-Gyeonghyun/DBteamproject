@@ -11,10 +11,10 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, select
 
 from app.entity.models import Keyword, Post, User
+from app.entity.repository.repository import RepositoryFactory
 from app.schemas.post.response import ListPostsResponse, PostResponse
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
-from app.entity.repository.user import UserRepository
-from app.schemas.user.response import FollowResponse, KeywordCountResponse, ListFollowResponse, LoginResponse
+from app.schemas.user.response import FollowResponse, UserBlogResponse, ListFollowResponse, LoginResponse
 from app.utils.exceptions import CustomException, ExceptionEnum
 
 class UserService:
@@ -22,8 +22,9 @@ class UserService:
     jwt_algorithm = "HS256"
     secret_key = "b8394efc3c1d4838a71587c4b6aef2fb1a62dcbf4d9e4c4b8bfa86c279d768d4"
         
-    def __init__(self, user_repository: UserRepository = Depends()) -> None:  
-        self.user_repository = user_repository
+    def __init__(self, repository_factory: RepositoryFactory = Depends()) -> None:  
+        self.user_repository = repository_factory.get_user_repository()
+        self.follow_repository = repository_factory.get_follow_repository()
         
     def hash_password(self, plain_password: str) -> str:
         hashed_password: bytes = bcrypt.hashpw(
@@ -101,7 +102,7 @@ class UserService:
     async def save_user_profile_image(self, profileImage: UploadFile) -> str:
         if profileImage:            
             save_dir = "uploads/profile_images"
-            os.makedirs(save_dir, exist_ok=True)  # 디렉토리 생성
+            os.makedirs(save_dir, exist_ok=True)
             save_path = os.path.join(save_dir, profileImage.filename)
 
             with open(save_path, "wb") as f:
@@ -118,7 +119,6 @@ class UserService:
         total_pages = math.ceil(len(total_follow) / page_param.limit) if total_follow else 0
         page_size = len(paged_follow) if paged_follow else 0
         
-        # 팔로우 정보 매핑
         following_list = [
             FollowResponse(
                 userID=user.userID,
@@ -158,10 +158,16 @@ class UserService:
             total=total_pages
         )
 
-    async def get_user_post_count(self, user_id: str) -> KeywordCountResponse:
+    async def get_user_blog_main(self, user_id: str, current_id: str) -> UserBlogResponse:
+        user = await self.user_repository.search_user_by_id(user_id)
         keyword_count = await self.user_repository.get_keyword_post_count(user_id)
         total_count = await self.user_repository.get_total_post_count(user_id)
-        return KeywordCountResponse(
+        follow = await self.follow_repository.get_follow(current_id, user_id)
+        follow_state = follow is not None
+        return UserBlogResponse(
+            userID=user.userID,
+            nickname=user.nickname,
+            follow_state=follow_state,
             keyword_count=keyword_count, 
             total_posts=total_count
         )
@@ -189,5 +195,5 @@ class UserService:
             return user_id
         except ExpiredSignatureError:
             raise CustomException(ExceptionEnum.TOKEN_EXPIRED)
-        except JWTError:  # 일반적인 JWT 에러 처리
+        except JWTError:
             raise CustomException(ExceptionEnum.INVALID_TOKEN)

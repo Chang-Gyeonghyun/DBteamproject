@@ -22,3 +22,11 @@ class LikeRepository:
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="Like not found")
         await self.session.commit()
+
+    async def check_like_state(self, user_id: str, post_id: int) -> bool:
+        like_query = (
+            select(Like)
+            .where(Like.postID == post_id, Like.userID == user_id)
+        )
+        like_result = await self.session.execute(like_query)
+        return like_result.scalar() is not None

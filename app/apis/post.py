@@ -31,8 +31,16 @@ async def trending_posts(
 
 
 @router.get("/{post_id}", response_model=PostWithDetailsResponse)
-async def get_post(post_id: int, post_service: PostService = Depends()):
-    return await post_service.get_post(post_id)
+async def get_post(
+    post_id: int, 
+    token: Optional[str] = Depends(oauth2_scheme),
+    user_service: UserService = Depends(),
+    post_service: PostService = Depends()
+):
+    user_id: Optional[str] = None
+    if token:
+        user_id = user_service.decode_jwt(token)
+    return await post_service.get_post(post_id, user_id)
 
 
 @router.put("/{post_id}")
@@ -60,7 +68,7 @@ async def delete_post(
     user_id: str = user_service.decode_jwt(token)
     return await post_service.delete_post(post_id, user_id)
 
-@router.get("/{user_id}/{keyword}", response_model=ListPostsResponse)
+@router.get("/{userID}/{keyword}", response_model=ListPostsResponse)
 async def get_user_posts_by_category(
     request: UserKeywordRequest = Depends(),
     post_service: PostService = Depends()

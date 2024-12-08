@@ -15,6 +15,7 @@ class PostService:
         self.post_repo = repository_factory.get_post_repository()
         self.keyword_repo = repository_factory.get_keyword_repository()
         self.attach_repo = repository_factory.get_attachment_repository()
+        self.like_repo = repository_factory.get_like_repository()
 
     async def create_post(self, post_data: PostCreateRequest, files: List[UploadFile]):
         post: Post = await self.post_repo.create_post(post_data)
@@ -26,11 +27,12 @@ class PostService:
         await self.keyword_repo.create_keyword(post.postID, post_data)
         return
 
-    async def get_post(self, post_id: int) -> PostWithDetailsResponse:
+    async def get_post(self, post_id: int, user_id: str) -> PostWithDetailsResponse:
         post = await self.post_repo.get_post_detail_by_id(post_id)
         if not post:
             raise CustomException(ExceptionEnum.ITEM_NOT_FOUND)
         
+        like_state = await self.like_repo.check_like_state(user_id, post_id)
         hierarchical_comments = self.build_comment_hierarchy(post.comments)
 
         response = PostWithDetailsResponse(
@@ -38,6 +40,7 @@ class PostService:
             Title=post.title,
             Content=post.content,
             Count_likes=post.count_likes,
+            like_state=like_state,
             userID=post.user.userID,
             nickname=post.user.nickname,
             Create_at=post.create_at,

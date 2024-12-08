@@ -23,6 +23,7 @@ class PostWithDetailsResponse(BaseModel):
     Title: str
     Content: str
     Count_likes: int
+    like_state: bool
     userID: str
     nickname: str
     Create_at: datetime

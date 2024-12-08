@@ -33,6 +33,9 @@ class ListFollowResponse(BaseModel):
     limit: int
     total: int
 
-class KeywordCountResponse(BaseModel):
+class UserBlogResponse(BaseModel):
+    userID: str
+    nickname: str
+    follow_state: bool
     keyword_count: Dict[str, int]
     total_posts: int
