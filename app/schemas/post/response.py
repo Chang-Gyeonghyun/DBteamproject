@@ -14,17 +14,16 @@ class CommentResponse(BaseModel):
     parentcommentID: Optional[int]
     content: str
     userID: str
+    nickname: str
     create_at: datetime
     replies: List["CommentResponse"] = []
-
-    class Config:
-        from_attributes = True
 
 class PostWithDetailsResponse(BaseModel):
     PostID: int
     Title: str
     Content: str
     Count_likes: int
+    userID: str
     nickname: str
     Create_at: datetime
     Update_at: datetime
@@ -36,6 +35,7 @@ class PostResponse(BaseModel):
     postID: int
     title: str
     count_likes: int
+    userID: str
     nickname: str
     create_at: datetime
 

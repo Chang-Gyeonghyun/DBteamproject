@@ -1,6 +1,6 @@
 import math
 import os
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 from uuid import uuid4
 import bcrypt
 from fastapi import Depends, UploadFile
@@ -8,11 +8,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError, jwt, ExpiredSignatureError
 from datetime import datetime, timedelta
 
-from app.entity.models import Post, User
+from sqlalchemy import func, select
+
+from app.entity.models import Keyword, Post, User
 from app.schemas.post.response import ListPostsResponse, PostResponse
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
 from app.entity.repository.user import UserRepository
-from app.schemas.user.response import FollowResponse, ListFollowResponse, LoginResponse
+from app.schemas.user.response import FollowResponse, KeywordCountResponse, ListFollowResponse, LoginResponse
 from app.utils.exceptions import CustomException, ExceptionEnum
 
 class UserService:
@@ -155,6 +157,15 @@ class UserService:
             limit=page_size, 
             total=total_pages
         )
+
+    async def get_user_post_count(self, user_id: str) -> KeywordCountResponse:
+        keyword_count = await self.user_repository.get_keyword_post_count(user_id)
+        total_count = await self.user_repository.get_total_post_count(user_id)
+        return KeywordCountResponse(
+            keyword_count=keyword_count, 
+            total_posts=total_count
+        )
+
 
     def create_jwt(self, userID: str) -> str:
         return jwt.encode(

@@ -18,6 +18,6 @@ ENV PYTHONPATH=/src
 EXPOSE 8000
 
 # FastAPI 애플리케이션을 실행합니다.
-# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-ENTRYPOINT ["bash", "-c", "python app/migration.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# ENTRYPOINT ["bash", "-c", "python app/migration.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

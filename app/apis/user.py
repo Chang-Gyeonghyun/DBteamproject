@@ -5,11 +5,11 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.entity.models import User
 from app.schemas.post.response import ListPostsResponse
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
-from app.schemas.user.response import ListFollowResponse, LoginResponse, UserInformation
+from app.schemas.user.response import KeywordCountResponse, ListFollowResponse, LoginResponse, UserInformation
 from app.service.user import UserService
 from app.utils.exceptions import CustomException, ExceptionEnum
 
-router = APIRouter(prefix="/user")
+router = APIRouter(prefix="/user", tags=['User'])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login")
 
 @router.post("/login", response_model=LoginResponse)
@@ -103,3 +103,10 @@ async def get_user_following(
     if user_id != UserID:
         raise CustomException(ExceptionEnum.USER_UNAUTHORIZED)
     return await user_service.get_user_following(user_id, page_param)
+
+@router.get("/{UserID}/post/count", response_model=KeywordCountResponse)
+async def get_user_post_count(
+    UserID: str,
+    user_service: UserService = Depends()
+):
+    return await user_service.get_user_post_count(UserID)

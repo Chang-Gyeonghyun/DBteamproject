@@ -38,12 +38,35 @@ class PostService:
             Title=post.title,
             Content=post.content,
             Count_likes=post.count_likes,
-            nickname=post.user.nickname if post.user else None,
+            userID=post.user.userID,
+            nickname=post.user.nickname,
             Create_at=post.create_at,
             Update_at=post.update_at,
             keyword=[kw.name for kw in post.keywords],
             attachment=[AttachmentResponse.from_orm(att) for att in post.attachments],
-            comments=[CommentResponse.from_orm(comment) for comment in hierarchical_comments],
+            comments=[
+                CommentResponse(
+                    commentID=comment.commentID,
+                    parentcommentID=comment.parentcommentID,
+                    content=comment.content,
+                    userID=comment.userID,
+                    nickname=comment.user.nickname, 
+                    create_at=comment.create_at,
+                    replies=[
+                        CommentResponse(
+                            commentID=reply.commentID,
+                            parentcommentID=reply.parentcommentID,
+                            content=reply.content,
+                            userID=reply.userID,
+                            nickname=reply.user.nickname,  
+                            create_at=reply.create_at,
+                            replies=[],
+                        )
+                        for reply in comment.replies
+                    ],
+                )
+                for comment in hierarchical_comments
+            ],
         )
         return response
     
@@ -113,7 +136,8 @@ class PostService:
                 postID=post.postID,
                 title=post.title,
                 count_likes=post.count_likes,
-                nickname=post.user.nickname if post.user else None,  # nickname 처리
+                userID=post.user.userID,
+                nickname=post.user.nickname,
                 create_at=post.create_at,
             )
             for post in posts
@@ -133,7 +157,8 @@ class PostService:
                 postID=post.postID,
                 title=post.title,
                 count_likes=post.count_likes,
-                nickname=post.user.nickname if post.user else None, 
+                userID=post.user.userID,
+                nickname=post.user.nickname,
                 create_at=post.create_at,
             )
             for post in posts

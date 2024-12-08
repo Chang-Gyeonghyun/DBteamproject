@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel, ConfigDict
    
 class LoginResponse(BaseModel):
@@ -32,3 +32,7 @@ class ListFollowResponse(BaseModel):
     page: int
     limit: int
     total: int
+
+class KeywordCountResponse(BaseModel):
+    keyword_count: Dict[str, int]
+    total_posts: int

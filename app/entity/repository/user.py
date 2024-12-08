@@ -1,9 +1,9 @@
+from typing import Dict
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 from app.database import get_database
-from app.entity.models import Follow, Like, Post, User
+from app.entity.models import Follow, Keyword, Like, Post, User
 from app.schemas.user.request import PaginationParams, UserSignUp, UserUpdate
 
 class UserRepository:
@@ -84,6 +84,27 @@ class UserRepository:
         
         result = await self.session.execute(query)
         return result.all()
+
+    async def get_keyword_post_count(self, user_id: str) -> Dict[str, int]:
+        keyword_count_stmt = (
+            select(Keyword.name, func.count(Keyword.postID))
+            .join(Post, Post.postID == Keyword.postID)
+            .where(Post.userID == user_id)
+            .group_by(Keyword.name)
+        )
+        keyword_count_result = await self.session.execute(keyword_count_stmt)
+        keyword_count = {row[0]: row[1] for row in keyword_count_result.all()}
+        return keyword_count
+
+
+    async def get_total_post_count(self, user_id: str) -> int:
+        total_posts_stmt = (
+            select(func.count(Post.postID))
+            .where(Post.userID == user_id)
+        )
+        total_posts_result = await self.session.execute(total_posts_stmt)
+        total_posts = total_posts_result.scalar()
+        return total_posts
 
     
     async def delete_user(self, user: User):

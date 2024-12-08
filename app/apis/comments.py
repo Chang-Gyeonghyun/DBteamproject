@@ -5,7 +5,7 @@ from app.service.user import UserService
 from app.utils.exceptions import CustomException, ExceptionEnum
 from app.apis.user import oauth2_scheme
 
-router = APIRouter(prefix="/comments")
+router = APIRouter(prefix="/comments", tags=['Comments'])
 
 @router.post("/", status_code=201)
 async def user_login(
