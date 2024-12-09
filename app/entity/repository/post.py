@@ -86,6 +86,33 @@ class PostRepository:
 
         return posts, total_count
 
+    async def get_user_posts_by_category(self, request: UserKeywordRequest) -> Tuple[List[Post], int]:
+        offset = (request.page - 1) * request.limit
+
+        stmt = (
+            select(Post)
+            .join(Keyword, Post.postID == Keyword.postID) 
+            .join(User, Post.userID == User.userID) 
+            .options(joinedload(Post.user)) 
+            .where(Post.userID == request.userID) 
+            .where(Keyword.name == request.keyword)  
+            .offset(offset)
+            .limit(request.limit)
+        )
+        result = await self.session.execute(stmt)
+        posts = result.scalars().all()
+
+        count_stmt = (
+            select(func.count(Post.postID))
+            .join(Keyword, Post.postID == Keyword.postID) 
+            .where(Post.userID == request.userID)
+            .where(Keyword.name == request.keyword) 
+        )
+        total_result = await self.session.execute(count_stmt)
+        total_count = total_result.scalar()
+
+        return posts, total_count
+
     async def get_posts_by_filtering(self, request: MainFilterSearch) -> Tuple[List[Post], int]:
         offset = (request.page - 1) * request.limit
         filters = []
@@ -106,6 +133,7 @@ class PostRepository:
 
         stmt = (
             select(Post)
+            .join(User, Post.userID == User.userID)  
             .options(joinedload(Post.user)) 
             .where(*filters)
             .offset(offset)
